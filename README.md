@@ -1,5 +1,5 @@
-# Online_Retail_Commands_Projects
-📊 Online Retail Commands Project (SQL)
+# Online_Retail_Sales_Projects
+📊 Online Retail Sales Project (SQL)
 📌 Project Overview
 
 This project focuses on analyzing an online retail dataset using SQL to extract meaningful business insights. The objective was to perform data cleaning, transformation, and advanced querying to understand sales performance, customer behavior, and product trends.
