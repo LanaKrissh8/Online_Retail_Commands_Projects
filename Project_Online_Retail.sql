@@ -1,0 +1,563 @@
+CREATE DATABASE online_retail;
+USE online_retail;
+
+CREATE TABLE customers
+ (
+    customer_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100),
+    city VARCHAR(50)
+);
+
+CREATE TABLE products
+(
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(100),
+    category VARCHAR(50),
+    price DECIMAL(10,2)
+);
+
+CREATE TABLE orders 
+(
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    order_date DATE,
+    total_amount DECIMAL(10,2),
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+
+CREATE TABLE order_items 
+(
+    item_id INT PRIMARY KEY,
+    order_id INT,
+    product_id INT,
+    quantity INT,
+    price DECIMAL(10,2),
+    FOREIGN KEY (order_id) REFERENCES orders(order_id),
+    FOREIGN KEY (product_id) REFERENCES products(product_id)
+);
+
+CREATE TABLE payments 
+(
+    payment_id INT PRIMARY KEY,
+    order_id INT,
+    payment_date DATE,
+    amount DECIMAL(10,2),
+    method VARCHAR(20),
+    FOREIGN KEY (order_id) REFERENCES orders(order_id)
+);
+
+SELECT * FROM PAYMENTS;
+
+INSERT INTO customers VALUES
+(1,'Amit Sharma','amit@gmail.com','Delhi'),
+(2,'Riya Verma','riya@gmail.com','Mumbai'),
+(3,'John Jacob','john@gmail.com','Chennai'),
+(4,'Sara Khan','sara@gmail.com','Delhi'),
+(5,'David Roy','david@gmail.com','Kolkata');
+
+INSERT INTO products VALUES
+(101,'iPhone 14','Mobile',70000),
+(102,'Samsung S22','Mobile',60000),
+(103,'Sony Headphone','Electronics',8000),
+(104,'Dell Laptop','Laptop',55000),
+(105,'HP Laptop','Laptop',52000);
+
+INSERT INTO orders VALUES
+(1001,1,'2024-01-10',78000),
+(1002,1,'2024-01-15',60000),
+(1003,3,'2024-02-01',8000),
+(1004,4,'2024-03-12',55000),
+(1005,2,'2024-03-20',52000);
+
+INSERT INTO order_items VALUES
+(1,1001,101,1,70000),
+(2,1001,103,1,8000),
+(3,1002,102,1,60000),
+(4,1003,103,1,8000),
+(5,1004,104,1,55000),
+(6,1005,105,1,52000);
+
+INSERT INTO payments VALUES
+(1,1001,'2024-01-11',78000,'UPI'),
+(2,1002,'2024-01-16',60000,'Card'),
+(3,1003,'2024-02-02',8000,'Cash'),
+(4,1004,'2024-03-13',55000,'Card'),
+(5,1005,'2024-03-21',52000,'UPI');
+
+-- JOINS
+-- Display all customers and their orders (INNER JOIN)
+SELECT * 
+FROM CUSTOMERS C
+INNER JOIN ORDERS O
+ON C.CUSTOMER_ID = O.CUSTOMER_ID;
+
+-- Show customers who haven’t placed any orders (LEFT JOIN)
+SELECT * 
+FROM CUSTOMERS C
+LEFT JOIN ORDERS O
+ON C.CUSTOMER_ID = O.CUSTOMER_ID
+WHERE ORDER_ID IS NULL;
+
+-- List all products sold with customer name and order date
+SELECT 
+	P.PRODUCT_NAME,
+    C.NAME,
+	O.ORDER_DATE
+FROM PRODUCTS P
+INNER JOIN ORDER_ITEMS OI
+ON OI.PRODUCT_ID = P.PRODUCT_ID
+INNER JOIN ORDERS O
+ON O.ORDER_ID = OI.ORDER_ID
+INNER JOIN CUSTOMERS C
+ON C.CUSTOMER_ID = O.CUSTOMER_ID;
+
+-- Show total quantity bought by each customer
+
+SELECT SUM(OI.QUANTITY),C.NAME
+FROM CUSTOMERS C
+INNER JOIN ORDERS O
+ON C.CUSTOMER_ID = O.CUSTOMER_ID
+INNER JOIN ORDER_ITEMS OI
+ON O.ORDER_ID = OI.ORDER_ID
+GROUP BY C.CUSTOMER_ID;
+
+-- List products and how many times each was sold
+
+SELECT 
+	P.PRODUCT_ID,
+    P.PRODUCT_NAME,
+    COUNT(*) AS TOTAL_SOLD,
+    SUM(P.PRICE) AS TOTAL_AMOUNT
+FROM PRODUCTS P
+INNER JOIN ORDER_ITEMS OI
+ON P.PRODUCT_ID = OI.PRODUCT_ID
+GROUP BY P.PRODUCT_ID;
+
+-- Show products purchased by customers from “Delhi”
+
+SELECT 
+	C.CUSTOMER_ID,
+    C.NAME,
+    P.PRODUCT_NAME,
+    P.PRICE,
+    C.CITY
+FROM PRODUCTS P
+INNER JOIN ORDER_ITEMS OI
+ON P.PRODUCT_ID = OI.PRODUCT_ID
+INNER JOIN ORDERS O
+ON O.ORDER_ID = OI.ORDER_ID
+INNER JOIN CUSTOMERS C
+ON C.CUSTOMER_ID = O.CUSTOMER_ID
+WHERE C.CITY = 'DELHI';
+
+-- Display order_id, product_name, quantity, customer_name
+SELECT 
+	OI.ORDER_ID,
+    C.NAME,
+    P.PRODUCT_NAME,
+    OI.QUANTITY
+FROM PRODUCTS P
+INNER JOIN ORDER_ITEMS OI
+ON P.PRODUCT_ID = OI.PRODUCT_ID
+INNER JOIN ORDERS O
+ON O.ORDER_ID = OI.ORDER_ID
+INNER JOIN CUSTOMERS C
+ON C.CUSTOMER_ID = O.CUSTOMER_ID
+ORDER BY ORDER_ID;
+
+-- Show customers who purchased "Laptop" category products
+
+SELECT 
+	C.CUSTOMER_ID,
+	OI.ORDER_ID,
+    C.NAME,
+    P.PRODUCT_NAME,
+    OI.QUANTITY,
+    P.CATEGORY
+FROM PRODUCTS P
+INNER JOIN ORDER_ITEMS OI
+ON P.PRODUCT_ID = OI.PRODUCT_ID
+INNER JOIN ORDERS O
+ON O.ORDER_ID = OI.ORDER_ID
+INNER JOIN CUSTOMERS C
+ON C.CUSTOMER_ID = O.CUSTOMER_ID
+WHERE P.CATEGORY = 'LAPTOP';
+
+-- Get total revenue earned per product using joins
+
+SELECT 
+	P.PRODUCT_ID,
+	P.PRODUCT_NAME,
+    SUM(OI.QUANTITY * OI.PRICE) AS REVENUE
+FROM PRODUCTS P
+INNER JOIN ORDER_ITEMS OI
+ON P.PRODUCT_ID = OI.PRODUCT_ID
+GROUP BY PRODUCT_ID;
+
+-- Find customers who bought more than 1 category of products
+
+SELECT
+	C.CUSTOMER_ID,
+	C.NAME,
+    COUNT(OI.ORDER_ID) AS COUNTSOFCATEGORY
+FROM PRODUCTS P
+INNER JOIN ORDER_ITEMS OI
+ON P.PRODUCT_ID = OI.PRODUCT_ID
+INNER JOIN ORDERS O
+ON O.ORDER_ID = OI.ORDER_ID
+INNER JOIN CUSTOMERS C
+ON C.CUSTOMER_ID = O.CUSTOMER_ID
+GROUP BY C.CUSTOMER_ID
+HAVING COUNT(distinct P.CATEGORY) > 1;
+
+-- SUBQUERIES
+-- Find customers who spent more than average spending
+
+SELECT 
+	C.NAME,
+    O.TOTAL_AMOUNT
+FROM CUSTOMERS C
+INNER JOIN ORDERS O
+ON C.CUSTOMER_ID = O.CUSTOMER_ID
+WHERE O.TOTAL_AMOUNT > (SELECT AVG(TOTAL_AMOUNT) FROM ORDERS);
+SELECT SUM(TOTAL_AMOUNT),COUNT(*),AVG(TOTAL_AMOUNT) FROM ORDERS;
+
+-- Show products not purchased by anyone
+
+SELECT * FROM PRODUCTS P
+LEFT JOIN ORDER_ITEMS OI
+ON P.PRODUCT_ID = OI.PRODUCT_ID
+WHERE OI.PRODUCT_ID IS NULL;
+
+INSERT INTO products VALUES
+(106,'iPhone 14','Mobile',70000),
+(107,'Samsung S22','Mobile',60000),
+(108,'Sony Headphone','Electronics',8000),
+(109,'Dell Laptop','Laptop',55000),
+(110,'HP Laptop','Laptop',52000);
+
+-- Display orders with amount greater than average order amount
+SELECT ORDER_ID,TOTAL_AMOUNT
+FROM ORDERS
+WHERE TOTAL_AMOUNT > (SELECT AVG(TOTAL_AMOUNT) FROM ORDERS);
+SELECT AVG(TOTAL_AMOUNT) FROM ORDERS;
+
+-- List customers who bought the most expensive product
+SELECT DISTINCT *
+FROM CUSTOMERS C
+JOIN ORDERS O
+ON C.CUSTOMER_ID = O.CUSTOMER_ID
+JOIN ORDER_ITEMS OI
+ON O.ORDER_ID = OI.ORDER_ID
+JOIN PRODUCTS P
+ON OI.PRODUCT_ID = P.PRODUCT_ID
+WHERE P.PRICE = (SELECT MAX(PRICE) FROM PRODUCTS);
+
+-- Find customers with more orders than the average
+SELECT CUSTOMER_ID, COUNT(ORDER_ID) FROM ORDERS
+GROUP BY CUSTOMER_ID
+HAVING COUNT(ORDER_ID) >
+(
+	SELECT AVG(COUNTS) FROM (SELECT COUNT(ORDER_ID) AS COUNTS FROM ORDERS GROUP BY CUSTOMER_ID) T
+);
+SELECT AVG(COUNTS) FROM (SELECT COUNT(ORDER_ID) AS COUNTS FROM ORDERS GROUP BY CUSTOMER_ID) T;
+
+-- Show products with price higher than category avg price
+SELECT *
+FROM PRODUCTS
+WHERE PRICE >
+(
+	SELECT AVG(PRICE) FROM PRODUCTS P
+    WHERE P.CATEGORY = CATEGORY
+);
+SELECT AVG(PRICE) FROM PRODUCTS P
+WHERE P.PRODUCT_ID = PRODUCT_ID;
+
+-- Find customers with at least one payment higher than overall average payment
+SELECT DISTINCT C.CUSTOMER_ID,C.NAME FROM CUSTOMERS C
+JOIN ORDERS O ON C.CUSTOMER_ID = O. CUSTOMER_ID
+JOIN PAYMENTS P ON O.ORDER_ID = P.ORDER_ID
+WHERE P.AMOUNT > 
+(
+	SELECT AVG(AMOUNT) FROM PAYMENTS
+);
+
+-- Show orders paid using the same method as customer 1
+SELECT DISTINCT O.ORDER_ID,O.CUSTOMER_ID,P.METHOD FROM ORDERS O
+JOIN PAYMENTS P ON O.ORDER_ID = P.ORDER_ID
+WHERE P.METHOD IN 
+(
+	SELECT DISTINCT P1.METHOD FROM PAYMENTS P1
+    JOIN ORDERS O1 ON O1.ORDER_ID = P1.ORDER_ID
+    WHERE O1.CUSTOMER_ID = 1
+);
+
+-- Find products purchased only once
+SELECT PRODUCT_ID,PRODUCT_NAME FROM PRODUCTS WHERE PRODUCT_ID IN
+(
+	SELECT PRODUCT_ID FROM ORDER_ITEMS
+	GROUP BY PRODUCT_ID
+	HAVING COUNT(*) = 1
+);
+
+-- Show customers whose last order is highest among all
+SELECT * FROM CUSTOMERS C
+JOIN ORDERS O ON C.CUSTOMER_ID = O.CUSTOMER_ID
+WHERE O.TOTAL_AMOUNT =
+(SELECT MAX(O2.TOTAL_AMOUNT) FROM ORDERS O2 WHERE O2.ORDER_DATE IN
+(SELECT MAX(O1.ORDER_DATE) FROM ORDERS O1 GROUP BY O1.CUSTOMER_ID));
+
+-- STORED PROCEDURES
+-- Procedure to get orders between two dates
+
+DELIMITER $$
+CREATE PROCEDURE ORDERBW2DATES(IN SDATE DATE,IN EDATE DATE)
+BEGIN
+	SELECT * FROM ORDERS WHERE ORDER_DATE BETWEEN SDATE AND EDATE;
+END $$
+DELIMITER ;
+
+CALL ORDERBW2DATES('2024-01-10','2024-02-01');
+-- SELECT * FROM ORDERS;
+
+-- Procedure to return total spending of a customer
+
+DELIMITER $$
+CREATE PROCEDURE TOTAL_SPEND(IN CUST_ID INT)
+BEGIN
+	SELECT CUSTOMER_ID,coalesce(SUM(TOTAL_AMOUNT),0) AS TOTAL_sPENDS FROM ORDERS WHERE CUSTOMER_ID = CUST_ID
+    GROUP BY CUSTOMER_ID;
+END $$
+DELIMITER ;
+CALL TOTAL_SPEND(1);   
+DROP PROCEDURE TOTAL_SPEND;
+
+-- Procedure to apply 10% discount on all "Mobile" category products
+DELIMITER $$
+CREATE PROCEDURE DISCOUNT10FORMOBILE()
+BEGIN
+    SELECT PRODUCT_ID,PRODUCT_NAME,CATEGORY,PRICE,PRICE * 0.10 AS 'DISCOUNT'
+	FROM PRODUCTS WHERE CATEGORY = 'MOBILE';
+END $$
+DELIMITER ;
+
+CALL  DISCOUNT10FORMOBILE;
+
+DELIMITER $$
+CREATE PROCEDURE DIS10FORMOBILES()
+BEGIN
+	UPDATE PRODUCTS
+    SET PRICE = PRICE - (PRICE * 0.10)
+    WHERE CATEGORY = 'MOBILE';
+END $$
+DELIMITER ;
+
+SET SQL_SAFE_UPDATES = 0;
+
+CALL DIS10FORMOBILES;
+SELECT * FROM PRODUCTS;
+DROP PROCEDURE DISCOUNT10FORMOBILE;
+
+-- Procedure to insert a new customer
+DELIMITER $$
+CREATE PROCEDURE NEWUSER(IN N_ID INT, IN N_NAME VARCHAR(100), IN N_EMAIL VARCHAR(100), IN N_CITY VARCHAR(50))
+BEGIN
+	INSERT INTO CUSTOMERS
+    VALUES (N_ID,N_NAME,N_EMAIL,N_CITY);
+END $$
+DELIMITER ;
+SELECT * FROM CUSTOMERS;
+CALL NEWUSER(6,'LANA KRISSH','lanakrissh@gmail.com','Bangalore');
+CALL NEWUSER(7,'ANIT KRISSH','anitkrissh@gmail.com','Bangalore');
+
+-- Procedure to delete orders older than a year
+DELIMITER $$
+CREATE PROCEDURE DELETEORDERSOLD1YR()
+BEGIN
+	DELETE FROM ORDERS WHERE ORDER_DATE < date_sub(curdate(),interval 2 year) ;
+END $$
+DELIMITER ;
+INSERT INTO ORDERS VALUES(1006,5,'2023-01-20',50000);
+SELECT * FROM ORDERS;
+CALL DELETEORDERSOLD1YR;
+
+-- Procedure to show order summary (multiple joins)
+DELIMITER $$
+CREATE PROCEDURE ORDERSUMMARY()
+BEGIN
+SELECT 
+		o.order_id,
+        o.order_date,
+        c.name,
+        pr.product_name,
+        pr.category,
+        oi.quantity,
+        oi.price,
+        (oi.quantity * oi.price) AS item_total
+FROM CUSTOMERS C
+INNER JOIN ORDERS O
+ON C.CUSTOMER_ID = O.CUSTOMER_ID
+INNER JOIN ORDER_ITEMS OI
+ON O.ORDER_ID = OI.ORDER_ID
+INNER JOIN PAYMENTS P
+ON P.ORDER_ID = O.ORDER_ID
+INNER JOIN PRODUCTS PR
+ON PR.PRODUCT_ID = OI.PRODUCT_ID;
+END $$
+DELIMITER ;
+CALL ORDERSUMMARY;
+
+-- Procedure to get top 3 customers by spending
+DELIMITER $$
+CREATE PROCEDURE TOP3SPENDS()
+BEGIN
+	SELECT C.CUSTOMER_ID,C.NAME,O.ORDER_ID,O.ORDER_DATE,O.TOTAL_AMOUNT 
+    FROM CUSTOMERS C
+    JOIN ORDERS O
+    ON C.CUSTOMER_ID = O.CUSTOMER_ID
+    ORDER BY O.TOTAL_AMOUNT DESC
+    LIMIT 3;
+END $$
+DELIMITER ;
+
+CALL TOP3SPENDS;
+
+-- Procedure to list products above a given price (IN param)
+DELIMITER $$
+CREATE PROCEDURE LISTPRODUCTS(IN P_PRICE DECIMAL(10,2))
+BEGIN
+	SELECT * FROM PRODUCTS WHERE PRICE > P_PRICE;
+END $$
+DELIMITER ;
+CALL LISTPRODUCTS(60000);
+
+-- Procedure to return count of orders per city
+DELIMITER $$
+CREATE PROCEDURE ORDERCOUNTPERCITY()
+BEGIN
+	SELECT C.CITY,COUNT(ORDER_ID) AS ORDER_COUNTS
+    FROM CUSTOMERS C
+    JOIN ORDERS O
+    ON C.CUSTOMER_ID = O.CUSTOMER_ID
+    GROUP BY CITY;
+END $$
+DELIMITER ;
+CALL ORDERCOUNTPERCITY;
+
+-- Procedure to generate monthly sales report
+DELIMITER $$
+CREATE PROCEDURE MNTLYREPORT()
+BEGIN
+	SELECT 
+		YEAR(O.ORDER_DATE) AS SALES_YEAR,
+		MONTH(O.ORDER_DATE) AS SALES_MONTH,
+		COUNT(O.ORDER_ID) AS TOTAL_ORDERS,
+		SUM(OI.QUANTITY * OI.PRICE) AS TOTAL_SALES
+	FROM ORDERS O
+	INNER JOIN ORDER_ITEMS OI
+	ON O.ORDER_ID = OI.ORDER_ID
+	GROUP BY 
+		YEAR(O.ORDER_DATE),MONTH(O.ORDER_DATE)
+	ORDER BY
+		SALES_YEAR,SALES_MONTH;
+END $$
+DELIMITER ;
+CALL MNTLYREPORT;
+
+-- VIEWS
+-- 	View: customer, order_count, total_spent
+CREATE OR REPLACE VIEW CUST_ORDERCOUNT_TOTSPENT AS
+	SELECT C.CUSTOMER_ID,C.NAME,COUNT(O.ORDER_ID) AS ORDER_COUNT,SUM(O.TOTAL_AMOUNT) AS TOTAL_SPENT
+	FROM CUSTOMERS C
+	JOIN ORDERS O
+	ON C.CUSTOMER_ID = O.CUSTOMER_ID
+	GROUP BY O.CUSTOMER_ID
+    ORDER BY O.CUSTOMER_ID;
+
+SELECT * FROM CUST_ORDERCOUNT_TOTSPENT;
+
+-- View: product sales summary
+ CREATE OR REPLACE VIEW PRODUCT_SALESSUMMARY AS
+	SELECT P.PRODUCT_ID,
+		P.PRODUCT_NAME,
+        COUNT(distinct OI.ORDER_ID) AS ORDER_COUNT,
+        SUM(OI.QUANTITY) AS TOTAL_QTY_SOLD,
+        coalesce(SUM(OI.PRICE*OI.QUANTITY),0) AS TOTAL_SALES
+	FROM PRODUCTS P
+	LEFT JOIN ORDER_ITEMS OI
+	ON P.PRODUCT_ID = OI.PRODUCT_ID
+	GROUP BY P.PRODUCT_ID;
+    
+   SELECT * FROM PRODUCT_SALESSUMMARY;
+   
+  -- View: daily sales totals
+ CREATE OR REPLACE VIEW DAILY_SALES AS
+	SELECT 
+		DATE(O.ORDER_DATE) AS SALES_DATE,
+        COUNT(distinct O.ORDER_ID) AS ORDER_COUNT,
+        SUM(OI.QUANTITY) AS TOTAL_QTY_SOLD,
+        coalesce(SUM(OI.PRICE*OI.QUANTITY),0) AS TOTAL_SALES
+	FROM ORDERS O
+	LEFT JOIN ORDER_ITEMS OI
+	ON O.ORDER_ID = OI.ORDER_ID
+	GROUP BY DATE(O.ORDER_DATE);
+    SELECT * FROM DAILY_SALES;
+    
+    -- View: top 5 best-selling products
+	CREATE OR REPLACE VIEW TOP5BESTSELLPRODUCTS AS
+	SELECT P.PRODUCT_ID,
+		P.PRODUCT_NAME,
+        SUM(OI.QUANTITY) AS TOTAL_QTY_SOLD,
+        coalesce(SUM(OI.PRICE*OI.QUANTITY),0) AS TOTAL_SALES
+	FROM PRODUCTS P
+	LEFT JOIN ORDER_ITEMS OI
+	ON P.PRODUCT_ID = OI.PRODUCT_ID
+	GROUP BY P.PRODUCT_ID
+    ORDER BY TOTAL_SALES DESC
+    LIMIT 5;
+SELECT * FROM TOP5BESTSELLPRODUCTS;
+
+
+/*
+	
+	View: last order date per customer
+	View: orders with payment status
+	View: products not ordered in last 30 days
+	View: customers who spent > 50,000
+	View: category-wise revenue
+	View: active customers (at least 2 orders)
+INDEXES
+	Create index on customer email
+	Create index on product category
+	Create composite index on orders(customer_id, order_date)
+	Drop an index safely
+	Create index to improve join between order_items & products
+	Create index to speed up “search by city”
+	Create unique index on customer email
+	Create index for fast "top spending customer" queries
+	Identify slow query and propose index
+	Create FULLTEXT index on product name
+CTEs
+	CTE: Show customers who spent more than 20,000
+	CTE: product revenue then show top 3 revenue products
+	CTE: list non-purchased products
+	CTE: show customers and number of items bought
+	CTE: join CTE and base tables together
+	Recursive CTE: generate numbers 1–20
+	Recursive CTE: generate dates between two dates
+	Recursive CTE: find cumulative monthly sales
+	CTE: category-wise highest priced product
+	CTE: all orders with rank by amount
+WINDOW FUNCTIONS
+	Rank customers by spending
+	Row_number for orders sorted by amount
+	Running total of sales by date
+	LAG: show previous order amount per customer
+	LEAD: show next order date
+	Find top 2 products per category
+	Dense_rank product prices category-wise
+	Show moving average of order amounts
+	Month-over-month sales change using LAG
+	Partition orders by city and rank by amount */
+    
